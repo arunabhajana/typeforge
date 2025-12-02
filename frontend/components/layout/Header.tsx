@@ -56,7 +56,7 @@ export function Header() {
                         Log in
                     </Link>
                     <Link
-                        href="/signup"
+                        href="/register"
                         className="text-sm font-medium bg-white/10 text-white px-4 py-2 rounded-full hover:bg-white/20 transition-colors border border-white/5"
                     >
                         Sign up
