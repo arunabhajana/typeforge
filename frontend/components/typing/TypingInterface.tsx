@@ -148,48 +148,62 @@ export function TypingInterface() {
     };
 
     return (
-        <div className="flex flex-col items-center w-full max-w-5xl mx-auto p-8 relative min-h-[600px]">
+        <div className="flex flex-col items-center justify-center w-full max-w-6xl mx-auto p-4 relative min-h-[600px]">
             <AnimatePresence mode="wait">
                 {!isFinished ? (
                     <motion.div
                         key="test"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className="w-full flex flex-col items-center"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95, filter: "blur(10px)" }}
+                        transition={{ duration: 0.3 }}
+                        className="w-full flex flex-col items-center gap-12 outline-none ring-0 focus:outline-none focus:ring-0"
+                        tabIndex={-1}
                     >
-                        <TestOptions
-                            mode={mode}
-                            duration={duration}
-                            wordCount={targetWordCount}
-                            setMode={setMode}
-                            setDuration={(d) => { setDuration(d); setTimeLeft(d); }}
-                            setWordCount={setTargetWordCount}
-                        />
+                        {/* Top Bar: Options and Stats */}
+                        <div className="flex flex-col md:flex-row items-center justify-between w-full max-w-4xl gap-6">
+                            <TestOptions
+                                mode={mode}
+                                duration={duration}
+                                wordCount={targetWordCount}
+                                setMode={setMode}
+                                setDuration={(d) => { setDuration(d); setTimeLeft(d); }}
+                                setWordCount={setTargetWordCount}
+                            />
 
-                        <Stats
-                            wpm={wpm}
-                            accuracy={accuracy}
-                            timeLeft={timeLeft}
-                            wordCount={mode === "words" ? words.length - userInput.split(" ").length + 1 : 0}
-                            mode={mode}
-                        />
+                            <Stats
+                                wpm={wpm}
+                                accuracy={accuracy}
+                                timeLeft={timeLeft}
+                                wordCount={mode === "words" ? words.length - userInput.split(" ").length + 1 : 0}
+                                mode={mode}
+                            />
+                        </div>
 
+                        {/* Typing Area */}
                         <div
-                            className="relative w-full bg-white/5 rounded-2xl p-8 min-h-[300px] backdrop-blur-md outline-none ring-0 focus:ring-0 focus:outline-none"
+                            className="relative w-full max-w-4xl group outline-none ring-0 focus:outline-none focus:ring-0"
                             onClick={() => inputRef.current?.focus()}
                         >
                             {!isFocused && (
-                                <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/20 rounded-2xl">
-                                    <span className="text-white/70 text-lg font-medium backdrop-blur-md px-4 py-2 rounded-lg bg-black/40">Click to focus</span>
+                                <div className="absolute inset-0 flex items-center justify-center z-20 backdrop-blur-[2px] transition-all duration-300 rounded-xl cursor-pointer">
+                                    <div className="flex items-center gap-2 text-muted-foreground/80 bg-background/80 px-6 py-3 rounded-full shadow-lg border border-white/5">
+                                        <span className="i-lucide-mouse-pointer w-4 h-4" />
+                                        <span className="text-sm font-medium">Click to focus</span>
+                                    </div>
                                 </div>
                             )}
 
-                            <TypingArea
-                                words={words}
-                                userInput={userInput}
-                                isFocused={isFocused}
-                            />
+                            <div className={`
+                                relative p-8 rounded-3xl transition-all duration-500
+                                ${isFocused ? "bg-white/5 shadow-2xl shadow-primary/5 ring-1 ring-white/10" : "bg-white/5 opacity-60"}
+                            `}>
+                                <TypingArea
+                                    words={words}
+                                    userInput={userInput}
+                                    isFocused={isFocused}
+                                />
+                            </div>
 
                             <input
                                 ref={inputRef}
@@ -204,8 +218,10 @@ export function TypingInterface() {
                             />
                         </div>
 
-                        <div className="mt-8 text-muted-foreground text-sm">
-                            <span className="bg-white/10 px-2 py-1 rounded text-xs mr-2">TAB</span> to restart
+                        {/* Footer Hint */}
+                        <div className="text-muted-foreground/50 text-sm font-medium flex items-center gap-2">
+                            <span className="bg-white/10 px-2 py-1 rounded-md text-xs text-foreground/80">TAB</span>
+                            <span>to restart</span>
                         </div>
                     </motion.div>
                 ) : (

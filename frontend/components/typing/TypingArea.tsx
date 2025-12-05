@@ -27,7 +27,7 @@ export function TypingArea({ words, userInput, className, isFocused }: TypingAre
     return (
         <div
             ref={containerRef}
-            className={`relative font-mono text-2xl leading-relaxed break-all max-h-[200px] overflow-hidden flex flex-wrap gap-x-3 gap-y-2 transition-all duration-300 ${!isFocused ? "blur-sm opacity-50" : ""} ${className}`}
+            className={`relative font-mono text-3xl leading-relaxed break-all max-h-[240px] overflow-hidden flex flex-wrap gap-x-4 gap-y-3 transition-all duration-300 ${!isFocused ? "blur-[2px] opacity-40 grayscale" : ""} ${className}`}
         >
             {!isFocused && (
                 <div className="absolute inset-0 flex items-center justify-center z-20">
@@ -74,8 +74,8 @@ export function TypingArea({ words, userInput, className, isFocused }: TypingAre
                                     {isCursor && (
                                         <motion.span
                                             layoutId="cursor"
-                                            className="absolute left-0 top-0 w-0.5 h-full bg-primary"
-                                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                            className="absolute left-0 top-0 w-0.5 h-full bg-primary shadow-[0_0_8px_2px_rgba(var(--primary-rgb),0.4)]"
+                                            transition={{ type: "spring", stiffness: 1000, damping: 40, mass: 0.8 }}
                                         />
                                     )}
                                     {char}
@@ -96,8 +96,8 @@ export function TypingArea({ words, userInput, className, isFocused }: TypingAre
                         {isCurrentWord && isFocused && typedWord.length >= word.length && (
                             <motion.span
                                 layoutId="cursor"
-                                className="absolute right-[-2px] top-0 w-0.5 h-full bg-primary"
-                                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                className="absolute right-[-2px] top-0 w-0.5 h-full bg-primary shadow-[0_0_8px_2px_rgba(var(--primary-rgb),0.4)]"
+                                transition={{ type: "spring", stiffness: 1000, damping: 40, mass: 0.8 }}
                             />
                         )}
                     </div>

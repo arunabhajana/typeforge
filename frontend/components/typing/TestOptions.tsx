@@ -19,35 +19,37 @@ export function TestOptions({
 }: TestOptionsProps) {
     return (
         <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex items-center justify-center gap-6 p-4 bg-white/5 rounded-full backdrop-blur-sm border border-white/10 mb-12 w-fit mx-auto"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex items-center gap-4 p-1.5 bg-white/5 rounded-full backdrop-blur-md border border-white/10"
         >
-            <div className="flex items-center gap-2 border-r border-white/10 pr-6">
+            <div className="flex items-center gap-1 bg-black/20 rounded-full p-1">
                 <button
                     onClick={() => setMode("time")}
-                    className={`px-3 py-1 rounded-md text-sm transition-colors ${mode === "time" ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground"
+                    className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-300 outline-none focus:outline-none focus:ring-0 ${mode === "time" ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "text-muted-foreground hover:text-foreground hover:bg-white/5"
                         }`}
                 >
                     Time
                 </button>
                 <button
                     onClick={() => setMode("words")}
-                    className={`px-3 py-1 rounded-md text-sm transition-colors ${mode === "words" ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground"
+                    className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-300 outline-none focus:outline-none focus:ring-0 ${mode === "words" ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "text-muted-foreground hover:text-foreground hover:bg-white/5"
                         }`}
                 >
                     Words
                 </button>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="w-px h-4 bg-white/10" />
+
+            <div className="flex items-center gap-1 pr-2">
                 {mode === "time" ? (
                     <>
                         {[30, 60, 120].map((t) => (
                             <button
                                 key={t}
                                 onClick={() => setDuration(t)}
-                                className={`text-sm transition-colors ${duration === t ? "text-primary font-bold" : "text-muted-foreground hover:text-foreground"
+                                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300 outline-none focus:outline-none focus:ring-0 ${duration === t ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-white/5"
                                     }`}
                             >
                                 {t}
@@ -60,7 +62,7 @@ export function TestOptions({
                             <button
                                 key={c}
                                 onClick={() => setWordCount(c)}
-                                className={`text-sm transition-colors ${wordCount === c ? "text-primary font-bold" : "text-muted-foreground hover:text-foreground"
+                                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300 outline-none focus:outline-none focus:ring-0 ${wordCount === c ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-white/5"
                                     }`}
                             >
                                 {c}
