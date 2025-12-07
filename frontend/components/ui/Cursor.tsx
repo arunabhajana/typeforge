@@ -60,6 +60,7 @@ export const Cursor = () => {
 
     return (
         <motion.div
+            id="custom-cursor"
             className="fixed top-0 left-0 pointer-events-none z-[9999] mix-blend-difference"
             style={{
                 x: cursorX,

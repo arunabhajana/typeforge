@@ -207,20 +207,45 @@ export function TypingInterface() {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center w-full max-w-6xl mx-auto p-4 relative min-h-[600px]">
+        <div className={`
+            flex flex-col items-center justify-center w-full max-w-6xl mx-auto p-4 relative min-h-[600px]
+            ${isActive && isFocused ? "cursor-none select-none" : ""}
+        `}>
+            {/* Global style style injection to force cursor hidden when active AND focused */}
+            {isActive && isFocused && (
+                <style jsx global>{`
+                    html, body, *:not(.debug-cursor) {
+                        cursor: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='), none !important;
+                    }
+                    /* Ensure input caret is hidden */
+                    input, textarea {
+                        caret-color: transparent !important;
+                        cursor: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='), none !important;
+                    }
+                    /* Hide custom cursor component */
+                    #custom-cursor {
+                        opacity: 0 !important;
+                        visibility: hidden !important;
+                    }
+                `}</style>
+            )}
             <AnimatePresence mode="wait">
                 {!isFinished ? (
                     <motion.div
                         key="test"
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95, filter: "blur(10px)" }}
+                        exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ duration: 0.3 }}
-                        className="w-full flex flex-col items-center gap-12 outline-none ring-0 focus:outline-none focus:ring-0"
+                        className="w-full flex flex-col items-center gap-12 outline-none ring-0 focus:outline-none focus:ring-0 border-none"
                         tabIndex={-1}
                     >
-                        {/* Top Bar: Options and Stats */}
-                        <div className="flex flex-col md:flex-row items-center justify-between w-full max-w-4xl gap-6">
+                        {/* Top Bar: Options and Stats - Fades out in focus mode */}
+                        <motion.div
+                            animate={{ opacity: isActive && isFocused ? 0 : 1, y: isActive && isFocused ? -20 : 0 }}
+                            transition={{ duration: 0.5 }}
+                            className="flex flex-col md:flex-row items-center justify-between w-full max-w-4xl gap-6"
+                        >
                             <TestOptions
                                 mode={mode}
                                 duration={duration}
@@ -237,26 +262,38 @@ export function TypingInterface() {
                                 wordCount={mode === "words" ? words.length - userInput.split(" ").length + 1 : 0}
                                 mode={mode}
                             />
-                        </div>
+                        </motion.div>
 
                         {/* Typing Area */}
                         <div
-                            className="relative w-full max-w-4xl group outline-none ring-0 focus:outline-none focus:ring-0"
+                            className="relative w-full max-w-4xl group outline-none ring-0 focus:outline-none focus:ring-0 border-none select-none"
                             onClick={() => inputRef.current?.focus()}
                         >
-                            {!isFocused && (
-                                <div className="absolute inset-0 flex items-center justify-center z-20 backdrop-blur-[2px] transition-all duration-300 rounded-xl cursor-pointer">
-                                    <div className="flex items-center gap-2 text-muted-foreground/80 bg-background/80 px-6 py-3 rounded-full shadow-lg border border-white/5">
-                                        <span className="i-lucide-mouse-pointer w-4 h-4" />
-                                        <span className="text-sm font-medium">Click to focus</span>
-                                    </div>
-                                </div>
+
+
+                            {/* Word Count Indicator for Words Mode */}
+                            {mode === "words" && isActive && isFocused && (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="absolute -top-8 right-4 text-sm font-medium text-primary/80"
+                                >
+                                    {Math.min(userInput.trim().split(/\s+/).length, words.length)} / {words.length}
+                                </motion.div>
                             )}
 
                             <div className={`
-                                relative p-8 rounded-3xl transition-all duration-500
-                                ${isFocused ? "bg-white/5 shadow-2xl shadow-primary/5 ring-1 ring-white/10" : "bg-white/5 opacity-60"}
+                                relative p-8 rounded-3xl transition-all duration-500 border-none outline-none ring-0
+                                ${isFocused ? "bg-white/5 shadow-2xl shadow-primary/5" : "bg-transparent opacity-60"}
                             `}>
+                                {!isFocused && (
+                                    <div className="absolute inset-0 flex items-center justify-center z-20 backdrop-blur-[2px] transition-all duration-300 rounded-3xl cursor-pointer">
+                                        <div className="flex items-center gap-3 text-foreground/90 bg-black/40 pl-8 pr-16 py-4 rounded-full shadow-2xl border border-white/10 backdrop-blur-md hover:scale-105 transition-transform duration-200">
+                                            <div className="i-lucide-mouse-pointer-2 w-5 h-5 animate-pulse text-primary" />
+                                            <span className="text-base font-medium tracking-wide">Click to focus</span>
+                                        </div>
+                                    </div>
+                                )}
                                 <TypingArea
                                     words={words}
                                     userInput={userInput}
@@ -272,16 +309,28 @@ export function TypingInterface() {
                                 onKeyDown={handleKeyDown}
                                 onFocus={() => setIsFocused(true)}
                                 onBlur={() => setIsFocused(false)}
-                                className="absolute inset-0 opacity-0 cursor-default outline-none"
+                                className={`
+                                    absolute inset-0 opacity-0 
+                                    ${isActive && isFocused ? "cursor-none" : "cursor-default"}
+                                    outline-none border-none ring-0 caret-transparent
+                                `}
+                                autoCorrect="off"
+                                autoCapitalize="off"
+                                spellCheck="false"
+                                autoComplete="off"
                                 autoFocus
                             />
                         </div>
 
-                        {/* Footer Hint */}
-                        <div className="text-muted-foreground/50 text-sm font-medium flex items-center gap-2">
+                        {/* Footer Hint - Fades out in focus mode */}
+                        <motion.div
+                            animate={{ opacity: isActive && isFocused ? 0 : 1 }}
+                            transition={{ duration: 0.5, delay: 0.1 }}
+                            className="text-muted-foreground/50 text-sm font-medium flex items-center gap-2"
+                        >
                             <span className="bg-white/10 px-2 py-1 rounded-md text-xs text-foreground/80">TAB</span>
                             <span>to restart</span>
-                        </div>
+                        </motion.div>
                     </motion.div>
                 ) : (
                     <Results

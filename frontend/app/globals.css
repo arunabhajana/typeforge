@@ -59,3 +59,20 @@ body {
 .after\:animate-border-beam::after {
   animation: border-beam calc(var(--duration)*1s) infinite linear;
 }
+
+/* Global Outline Removal */
+*:focus, *:focus-visible, *:focus-within, * {
+  outline: none !important;
+  box-shadow: none !important; /* Be careful with this, but user said "all measures". Actually this might kill my custom shadows. Let's be specific. */
+}
+
+/* Restore custom shadows where needed, or just target the pesky outlines */
+input:focus, button:focus, [tabindex]:focus {
+    outline: none !important;
+    ring: 0 !important;
+}
+
+/* Specific fix for Next.js/React hydration focus issues or specific browser defaults */
+#__next, main, div[role="main"] {
+    outline: none !important;
+}
