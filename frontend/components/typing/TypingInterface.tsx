@@ -20,8 +20,13 @@ export function TypingInterface() {
     const [isActive, setIsActive] = useState(false);
     const [isFinished, setIsFinished] = useState(false);
     const [wpm, setWpm] = useState(0);
+    const [rawWpm, setRawWpm] = useState(0);
     const [accuracy, setAccuracy] = useState(100);
+    const [consistency, setConsistency] = useState(0);
+    const [charStats, setCharStats] = useState({ correct: 0, incorrect: 0, extra: 0, missed: 0 });
     const [isFocused, setIsFocused] = useState(true);
+
+    const wpmHistory = useRef<number[]>([]);
 
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -33,7 +38,11 @@ export function TypingInterface() {
         setIsActive(false);
         setIsFinished(false);
         setWpm(0);
+        setRawWpm(0);
         setAccuracy(100);
+        setConsistency(0);
+        setCharStats({ correct: 0, incorrect: 0, extra: 0, missed: 0 });
+        wpmHistory.current = [];
         setTimeLeft(duration);
         if (inputRef.current) inputRef.current.focus();
     }, [mode, duration, targetWordCount]);
@@ -70,20 +79,36 @@ export function TypingInterface() {
         const endTime = Date.now();
         const timeInMinutes = (endTime - startTime) / 60000;
 
-        const wordsString = words.join(" ");
-        let correctChars = 0;
-
-        // Calculate correct chars based on word matching to be consistent with rendering
         const typedWords = userInput.split(" ");
+        let correctChars = 0;
+        let incorrectChars = 0;
+        let extraChars = 0;
+        let missedChars = 0;
+
         typedWords.forEach((typedWord, i) => {
             const targetWord = words[i];
-            if (!targetWord) return;
+            if (!targetWord) {
+                // Extra words typed? Treat as extra characters
+                extraChars += typedWord.length;
+                return;
+            }
 
-            for (let j = 0; j < typedWord.length; j++) {
-                if (j < targetWord.length && typedWord[j] === targetWord[j]) {
+            // Compare characters
+            for (let j = 0; j < Math.max(typedWord.length, targetWord.length); j++) {
+                const tChar = typedWord[j];
+                const wChar = targetWord[j];
+
+                if (tChar === wChar) {
                     correctChars++;
+                } else if (tChar && wChar) {
+                    incorrectChars++;
+                } else if (tChar && !wChar) {
+                    extraChars++;
+                } else if (!tChar && wChar) {
+                    missedChars++;
                 }
             }
+
             // Add space as correct char if word is finished and not last word
             if (i < typedWords.length - 1) {
                 correctChars++;
@@ -95,10 +120,36 @@ export function TypingInterface() {
         const safeTime = finalTimeMinutes < 0.001 ? 0.001 : finalTimeMinutes;
 
         const finalWpm = Math.round((correctChars / 5) / safeTime);
-        const calculatedAccuracy = Math.round((correctChars / userInput.length) * 100) || 100;
+        const finalRawWpm = Math.round((userInput.length / 5) / safeTime);
+        const calculatedAccuracy = Math.round((correctChars / Math.max(userInput.length, 1)) * 100) || 0;
+
+        // Calculate consistency (Coefficient of Variation)
+        const history = wpmHistory.current;
+        let calcConsistency = 0;
+        if (history.length > 0) {
+            // Filter out initial zeros or noise if needed, but simple SD/Mean works
+            const mean = history.reduce((a, b) => a + b, 0) / history.length;
+            const variance = history.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / history.length;
+            const sd = Math.sqrt(variance);
+            // Consistency = 100 - CV. If CV is 0 (perfectly consistent), Consistency is 100.
+            // Heuristic: If SD is high, consistency is lower.
+            // A simpler metric might be better for typing tests, but let's try (1 - sd/mean)*100
+            // If mean is 0, avoid NaN
+            if (mean > 0) {
+                const cv = sd / mean;
+                // Clamp consistency between 0 and 100
+                calcConsistency = Math.max(0, Math.round((1 - cv) * 100));
+            }
+        }
+
+        // Fallback for very short tests or odd data
+        if (calcConsistency === 0 && history.length < 2) calcConsistency = 100;
 
         setWpm(finalWpm);
+        setRawWpm(finalRawWpm);
         setAccuracy(calculatedAccuracy);
+        setConsistency(calcConsistency);
+        setCharStats({ correct: correctChars, incorrect: incorrectChars, extra: extraChars, missed: missedChars });
     };
 
     // Real-time stats
@@ -108,11 +159,19 @@ export function TypingInterface() {
             if (timeElapsed > 0) {
                 // Simplified real-time calc
                 const correctChars = userInput.split("").filter((c, i) => c === words.join(" ")[i]).length;
-                setWpm(Math.round((correctChars / 5) / timeElapsed));
-                setAccuracy(Math.round((correctChars / userInput.length) * 100) || 100);
+                const currentWpm = Math.round((correctChars / 5) / timeElapsed);
+                setWpm(currentWpm);
+                setAccuracy(Math.round((correctChars / Math.max(userInput.length, 1)) * 100) || 100);
+
+                // Track history for consistency
+                // Only push periodically to avoid too much noise? Or every render is fine?
+                // Every render is too frequent, but let's assume it's okay for now or use interval
+                if (Date.now() % 1000 < 100) { // Rough 1s interval hack, better to use interval
+                    wpmHistory.current.push(currentWpm);
+                }
             }
         }
-    }, [userInput, isActive, startTime]);
+    }, [userInput, isActive, startTime, words]); // Added words to dependency
 
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -228,7 +287,11 @@ export function TypingInterface() {
                     <Results
                         key="results"
                         wpm={wpm}
+                        rawWpm={rawWpm}
                         accuracy={accuracy}
+                        consistency={consistency}
+                        charStats={charStats}
+                        time={mode === "time" ? duration : (startTime ? (Date.now() - startTime) / 1000 : 0)}
                         onRestart={resetTest}
                     />
                 )}
