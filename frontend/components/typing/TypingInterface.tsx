@@ -2,14 +2,16 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { generateWords } from "@/utils/words";
+import { getRandomSnippet } from "@/utils/snippets";
 import { TypingArea } from "./TypingArea";
+import { CodeTypingArea } from "./CodeTypingArea";
 import { Stats } from "./Stats";
 import { TestOptions } from "./TestOptions";
 import { Results } from "./Results";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function TypingInterface() {
-    const [mode, setMode] = useState<"time" | "words">("time");
+    const [mode, setMode] = useState<"time" | "words" | "code">("time");
     const [duration, setDuration] = useState(30);
     const [targetWordCount, setTargetWordCount] = useState(50);
 
@@ -28,11 +30,17 @@ export function TypingInterface() {
 
     const wpmHistory = useRef<number[]>([]);
 
-    const inputRef = useRef<HTMLInputElement>(null);
+    const inputRef = useRef<HTMLTextAreaElement>(null);
 
     const resetTest = useCallback(() => {
-        const count = mode === "words" ? targetWordCount : 100;
-        setWords(generateWords(count));
+        if (mode === "code") {
+            const snippet = getRandomSnippet();
+            setWords([snippet.code]); // Store code as single string in array for consistent type, or handle differently. 
+            // Actually, let's just use the first element if mode is code.
+        } else {
+            const count = mode === "words" ? targetWordCount : 100;
+            setWords(generateWords(count));
+        }
         setUserInput("");
         setStartTime(null);
         setIsActive(false);
@@ -70,7 +78,11 @@ export function TypingInterface() {
     const finishTest = () => {
         setIsActive(false);
         setIsFinished(true);
-        calculateStats();
+        if (mode === "code") {
+            calculateCodeStats();
+        } else {
+            calculateStats();
+        }
     };
 
     const calculateStats = () => {
@@ -152,13 +164,54 @@ export function TypingInterface() {
         setCharStats({ correct: correctChars, incorrect: incorrectChars, extra: extraChars, missed: missedChars });
     };
 
+    // Calculate stats specifically for code mode
+    const calculateCodeStats = () => {
+        if (!startTime) return;
+        const endTime = Date.now();
+        const timeInMinutes = (endTime - startTime) / 60000;
+        const safeTime = timeInMinutes < 0.001 ? 0.001 : timeInMinutes;
+
+        const code = words[0]; // In code mode, words[0] is the full code snippet
+        let correctChars = 0;
+        let incorrectChars = 0;
+
+        for (let i = 0; i < userInput.length; i++) {
+            if (userInput[i] === code[i]) {
+                correctChars++;
+            } else {
+                incorrectChars++;
+            }
+        }
+
+        // Count missed
+        const missedChars = Math.max(0, code.length - userInput.length);
+
+        const finalWpm = Math.round((correctChars / 5) / safeTime);
+        const finalRawWpm = Math.round((userInput.length / 5) / safeTime);
+        const calculatedAccuracy = Math.round((correctChars / Math.max(userInput.length, 1)) * 100) || 0;
+
+        setWpm(finalWpm);
+        setRawWpm(finalRawWpm);
+        setAccuracy(calculatedAccuracy);
+        setCharStats({ correct: correctChars, incorrect: incorrectChars, extra: 0, missed: missedChars });
+        // Consistency logic can stay same or be adapted
+        setConsistency(100); // Placeholder
+    }
+
     // Real-time stats
     useEffect(() => {
         if (isActive && startTime) {
             const timeElapsed = (Date.now() - startTime) / 60000;
             if (timeElapsed > 0) {
                 // Simplified real-time calc
-                const correctChars = userInput.split("").filter((c, i) => c === words.join(" ")[i]).length;
+                let correctChars = 0;
+                if (mode === "code") {
+                    const code = words[0] || "";
+                    correctChars = userInput.split("").filter((c, i) => c === code[i]).length;
+                } else {
+                    correctChars = userInput.split("").filter((c, i) => c === words.join(" ")[i]).length;
+                }
+
                 const currentWpm = Math.round((correctChars / 5) / timeElapsed);
                 setWpm(currentWpm);
                 setAccuracy(Math.round((correctChars / Math.max(userInput.length, 1)) * 100) || 100);
@@ -174,7 +227,7 @@ export function TypingInterface() {
     }, [userInput, isActive, startTime, words]); // Added words to dependency
 
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         if (isFinished) return;
 
         const val = e.target.value;
@@ -196,6 +249,11 @@ export function TypingInterface() {
             } else if (typedWords.length > words.length) {
                 finishTest();
             }
+        } else if (mode === "code") {
+            const code = words[0];
+            if (val.length >= code.length) {
+                finishTest();
+            }
         }
     };
 
@@ -203,6 +261,41 @@ export function TypingInterface() {
         if (e.key === "Tab") {
             e.preventDefault();
             resetTest();
+            return;
+        }
+
+        // Smart Enter for Code Mode
+        if (mode === "code" && e.key === "Enter") {
+            e.preventDefault();
+            const code = words[0];
+            const currentPos = userInput.length;
+
+            // Check if next expected char is newline
+            if (code[currentPos] === '\n') {
+                let indentation = "";
+                // Look ahead for indentation
+                let i = currentPos + 1;
+                while (i < code.length && (code[i] === ' ' || code[i] === '\t')) {
+                    indentation += code[i];
+                    i++;
+                }
+
+                // Construct new input with newline and indentation
+
+
+                const newInput = userInput + '\n' + indentation;
+                setUserInput(newInput);
+
+                // If this completes the snippet (highly unlikely on enter, but possible if last char is newline?)
+                if (newInput.length >= code.length) {
+                    finishTest();
+                }
+            } else {
+                // User pressed Enter but expected char wasn't newline. 
+                // Allow them to type newline anyway (it will be red/wrong)? 
+                // Or block? Standard is allow and show error.
+                setUserInput(prev => prev + '\n');
+            }
         }
     };
 
@@ -259,7 +352,8 @@ export function TypingInterface() {
                                 wpm={wpm}
                                 accuracy={accuracy}
                                 timeLeft={timeLeft}
-                                wordCount={mode === "words" ? words.length - userInput.split(" ").length + 1 : 0}
+
+                                wordCount={mode === "words" ? words.length - userInput.split(" ").length + 1 : (mode === "code" ? (words[0] || "").length - userInput.length : 0)}
                                 mode={mode}
                             />
                         </motion.div>
@@ -294,16 +388,26 @@ export function TypingInterface() {
                                         </div>
                                     </div>
                                 )}
-                                <TypingArea
-                                    words={words}
-                                    userInput={userInput}
-                                    isFocused={isFocused}
-                                />
+                                {mode !== "code" && (
+                                    <TypingArea
+                                        words={words}
+                                        userInput={userInput}
+                                        isFocused={isFocused}
+                                    />
+                                )}
+
+                                {mode === "code" && (
+                                    <CodeTypingArea
+                                        code={words[0] || ""}
+                                        userInput={userInput}
+                                        isFocused={isFocused}
+                                        className="absolute inset-0 z-10"
+                                    />
+                                )}
                             </div>
 
-                            <input
+                            <textarea
                                 ref={inputRef}
-                                type="text"
                                 value={userInput}
                                 onChange={handleInputChange}
                                 onKeyDown={handleKeyDown}
@@ -312,10 +416,8 @@ export function TypingInterface() {
                                 className={`
                                     absolute inset-0 opacity-0 
                                     ${isActive && isFocused ? "cursor-none" : "cursor-default"}
-                                    outline-none border-none ring-0 caret-transparent
+                                    outline-none border-none ring-0 caret-transparent resize-none
                                 `}
-                                autoCorrect="off"
-                                autoCapitalize="off"
                                 spellCheck="false"
                                 autoComplete="off"
                                 autoFocus

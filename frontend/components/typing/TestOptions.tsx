@@ -1,10 +1,10 @@
 import { motion } from "framer-motion";
 
 interface TestOptionsProps {
-    mode: "time" | "words";
+    mode: "time" | "words" | "code";
     duration: number;
     wordCount: number;
-    setMode: (mode: "time" | "words") => void;
+    setMode: (mode: "time" | "words" | "code") => void;
     setDuration: (duration: number) => void;
     setWordCount: (count: number) => void;
 }
@@ -37,6 +37,13 @@ export function TestOptions({
                         }`}
                 >
                     Words
+                </button>
+                <button
+                    onClick={() => setMode("code")}
+                    className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-300 outline-none focus:outline-none focus:ring-0 ${mode === "code" ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                        }`}
+                >
+                    Code
                 </button>
             </div>
 

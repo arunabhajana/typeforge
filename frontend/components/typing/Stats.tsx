@@ -5,7 +5,7 @@ interface StatsProps {
     accuracy: number;
     timeLeft?: number;
     wordCount?: number;
-    mode: "time" | "words";
+    mode: "time" | "words" | "code";
 }
 
 export function Stats({ wpm, accuracy, timeLeft, wordCount, mode }: StatsProps) {
@@ -16,8 +16,12 @@ export function Stats({ wpm, accuracy, timeLeft, wordCount, mode }: StatsProps) 
                 animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col items-end"
             >
-                <span className="text-3xl font-bold text-primary leading-none">{mode === "time" ? timeLeft : wordCount}</span>
-                <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">{mode === "time" ? "sec" : "words"}</span>
+                <span className="text-3xl font-bold text-primary leading-none">
+                    {mode === "time" ? timeLeft : wordCount}
+                </span>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">
+                    {mode === "time" ? "sec" : mode === "words" ? "words" : "chars"}
+                </span>
             </motion.div>
 
             <div className="w-px h-8 bg-white/10" />
