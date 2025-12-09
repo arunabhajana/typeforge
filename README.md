@@ -1,4 +1,4 @@
-# TypeForge Frontend
+# TypeForge
 
 This is the Next.js frontend for TypeForge.
 
