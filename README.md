@@ -1,6 +1,5 @@
 # TypeForge
 
-![TypeForge Demo](frontend/public/assets/demo.webp)
 
 <div align="center">
 
